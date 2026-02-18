@@ -61,7 +61,7 @@ dependencies = [
     "plotly>=5.0.0",
 
     # 网络爬虫和解析
-    "curl-cffi>=0.6.0",  # 模拟真实浏览器TLS指纹，绕过反爬虫检测
+    "curl-cffi>=0.15.0b3",  # 模拟真实浏览器TLS指纹，绕过反爬虫检测；0.14.0 在 macOS 本地构建有 /Users/runner 权限 bug
     "feedparser>=6.0.11",
     "parsel>=1.10.0",
     "praw>=7.8.1",
@@ -87,7 +87,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-qianfan = ["qianfan>=0.4.20"]
+qianfan = ["qianfan>=0.4.12.3"]
 
 [project.scripts]
 tradingagents = "main:main"
