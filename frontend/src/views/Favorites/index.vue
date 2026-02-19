@@ -30,6 +30,7 @@
             <el-option label="A股" value="A股" />
             <el-option label="港股" value="港股" />
             <el-option label="美股" value="美股" />
+            <el-option label="🪙 大宗商品" value="COMMODITY" />
           </el-select>
         </el-col>
 
@@ -234,6 +235,7 @@
             <el-option label="A股" value="A股" />
             <el-option label="港股" value="港股" />
             <el-option label="美股" value="美股" />
+            <el-option label="🪙 大宗商品" value="COMMODITY" />
           </el-select>
         </el-form-item>
 
@@ -251,7 +253,7 @@
         <el-form-item label="股票名称" prop="stock_name">
           <el-input v-model="addForm.stock_name" placeholder="股票名称" />
           <div v-if="addForm.market !== 'A股'" style="font-size: 12px; color: #E6A23C; margin-top: 4px;">
-            {{ addForm.market }}不支持自动获取，请手动输入股票名称
+            {{ addForm.market === 'COMMODITY' ? '大宗商品' : addForm.market }}不支持自动获取，请手动输入股票名称
           </div>
         </el-form-item>
 
@@ -607,6 +609,12 @@ const validateStockCode = (rule: any, value: any, callback: any) => {
       callback(new Error('美股代码必须是1-5个字母，如：AAPL'))
       return
     }
+  } else if (market === 'COMMODITY') {
+    // 大宗商品：GC=F、CL=F 等
+    if (!/^[A-Z0-9]+=F$/i.test(code) && !/^[A-Z0-9]+\.F$/i.test(code)) {
+      callback(new Error('大宗商品代码格式：如 GC=F（黄金）、CL=F（原油）'))
+      return
+    }
   }
 
   callback()
@@ -886,6 +894,8 @@ const getStockCodePlaceholder = () => {
     return '请输入4位数字代码，如：0700'
   } else if (market === '美股') {
     return '请输入股票代码，如：AAPL'
+  } else if (market === 'COMMODITY') {
+    return '请输入商品代码，如：GC=F、CL=F'
   }
   return '请输入股票代码'
 }
@@ -899,6 +909,8 @@ const getStockCodeHint = () => {
     return '港股不支持自动获取名称，请手动输入'
   } else if (market === '美股') {
     return '美股不支持自动获取名称，请手动输入'
+  } else if (market === 'COMMODITY') {
+    return '大宗商品不支持自动获取名称，请手动输入'
   }
   return ''
 }

@@ -85,6 +85,20 @@
                   </el-descriptions-item>
                 </el-descriptions>
               </el-tab-pane>
+
+              <!-- 大宗商品账户（使用 USD） -->
+              <el-tab-pane label="🪙 大宗商品" name="COMMODITY">
+                <el-descriptions :column="1" border>
+                  <el-descriptions-item label="可用资金">${{ fmtAmount(account.cash?.USD || 0) }}</el-descriptions-item>
+                  <el-descriptions-item label="持仓市值">${{ fmtAmount(account.positions_value?.USD || 0) }}</el-descriptions-item>
+                  <el-descriptions-item label="总资产">${{ fmtAmount(account.equity?.USD || 0) }}</el-descriptions-item>
+                  <el-descriptions-item label="已实现盈亏">
+                    <span :style="{ color: (account.realized_pnl?.USD || 0) >= 0 ? '#67C23A' : '#F56C6C' }">
+                      ${{ fmtAmount(account.realized_pnl?.USD || 0) }}
+                    </span>
+                  </el-descriptions-item>
+                </el-descriptions>
+              </el-tab-pane>
             </el-tabs>
 
             <div style="margin-top: 12px; text-align: center; color: #909399; font-size: 12px">
@@ -119,6 +133,7 @@
                 <el-tag v-if="row.market === 'CN'" type="success" size="small">🇨🇳 A股</el-tag>
                 <el-tag v-else-if="row.market === 'HK'" type="warning" size="small">🇭🇰 港股</el-tag>
                 <el-tag v-else-if="row.market === 'US'" type="info" size="small">🇺🇸 美股</el-tag>
+                <el-tag v-else-if="row.market === 'COMMODITY'" type="warning" size="small">🪙 大宗商品</el-tag>
                 <el-tag v-else size="small">{{ row.market || 'CN' }}</el-tag>
               </template>
             </el-table-column>
@@ -232,16 +247,18 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="代码">
-          <el-input v-model="order.code" placeholder="A股: 600519 | 港股: 0700 | 美股: AAPL" @input="detectMarket" />
+          <el-input v-model="order.code" placeholder="A股: 600519 | 港股: 0700 | 美股: AAPL | 大宗: GC=F" @input="detectMarket" />
         </el-form-item>
         <el-form-item label="市场" v-if="detectedMarket">
           <el-tag v-if="detectedMarket === 'CN'" type="success">🇨🇳 A股市场 (CNY)</el-tag>
           <el-tag v-else-if="detectedMarket === 'HK'" type="warning">🇭🇰 港股市场 (HKD)</el-tag>
           <el-tag v-else-if="detectedMarket === 'US'" type="info">🇺🇸 美股市场 (USD)</el-tag>
+          <el-tag v-else-if="detectedMarket === 'COMMODITY'" type="warning">🪙 大宗商品 (USD)</el-tag>
           <div style="margin-top: 8px; font-size: 12px; color: #909399">
             <span v-if="detectedMarket === 'CN'">💡 A股T+1，今天买入明天可卖</span>
             <span v-else-if="detectedMarket === 'HK'">💡 港股T+0，买入后立即可卖</span>
             <span v-else-if="detectedMarket === 'US'">💡 美股T+0，买入后立即可卖 | 零佣金</span>
+            <span v-else-if="detectedMarket === 'COMMODITY'">💡 大宗商品期货，以美元计价</span>
           </div>
         </el-form-item>
         <el-form-item label="数量">
@@ -327,6 +344,12 @@ function detectMarket() {
   const code = order.value.code.trim().toUpperCase()
   if (!code) {
     detectedMarket.value = ''
+    return
+  }
+
+  // 大宗商品：Yahoo 格式如 GC=F、CL=F
+  if (/^[A-Z0-9]+=F$/.test(code) || /^[A-Z0-9]+\.F$/.test(code)) {
+    detectedMarket.value = 'COMMODITY'
     return
   }
 
@@ -483,6 +506,11 @@ function goAnalysisWithCode(stockCode: string) {
 // 根据股票代码判断市场
 function getMarketByCode(code: string): string {
   if (!code) return 'A股'
+
+  // 大宗商品：GC=F、CL=F 等
+  if (/^[A-Z0-9]+=F$/i.test(code) || /^[A-Z0-9]+\.F$/i.test(code)) {
+    return 'COMMODITY'
+  }
 
   // 6位数字 = A股
   if (/^\d{6}$/.test(code)) {

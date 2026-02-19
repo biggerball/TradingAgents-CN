@@ -80,6 +80,10 @@
                           <span>🇭🇰 港股市场</span>
                           <span style="color: #909399; font-size: 12px; margin-left: 8px;">（1-5位数字）</span>
                         </el-option>
+                        <el-option label="🪙 大宗商品" value="COMMODITY">
+                          <span>🪙 大宗商品</span>
+                          <span style="color: #909399; font-size: 12px; margin-left: 8px;">（如 GC=F、CL=F）</span>
+                        </el-option>
                       </el-select>
                     </el-form-item>
                   </el-col>
@@ -128,7 +132,8 @@
                     class="analyst-card"
                     :class="{ 
                       active: analysisForm.selectedAnalysts.includes(analyst.name),
-                      disabled: analyst.name === '社媒分析师' && analysisForm.market === 'A股'
+                      disabled: (analyst.name === '社媒分析师' && analysisForm.market === 'A股') ||
+                               (analyst.name === '基本面分析师' && analysisForm.market === 'COMMODITY')
                     }"
                     @click="toggleAnalyst(analyst.name)"
                   >
@@ -149,10 +154,17 @@
                   </div>
                 </div>
                 
-                <!-- A股提示 -->
+                <!-- 市场限制提示 -->
                 <el-alert
                   v-if="analysisForm.market === 'A股'"
                   title="A股市场暂不支持社媒分析（国内数据源限制）"
+                  type="info"
+                  :closable="false"
+                  style="margin-top: 12px"
+                />
+                <el-alert
+                  v-else-if="analysisForm.market === 'COMMODITY'"
+                  title="大宗商品暂不支持基本面分析（商品无公司财务数据）"
                   type="info"
                   :closable="false"
                   style="margin-top: 12px"
@@ -725,7 +737,7 @@ marked.setOptions({
 })
 
 // 市场类型定义
-type MarketType = 'A股' | '美股' | '港股'
+type MarketType = 'A股' | '美股' | '港股' | 'COMMODITY'
 
 // 表单类型定义
 interface AnalysisForm {
@@ -841,6 +853,16 @@ const onStockCodeInput = () => {
 
 // 市场类型变更时的处理
 const onMarketChange = () => {
+  // 切换到 A股 时移除社媒分析师（A股不支持）
+  if (analysisForm.market === 'A股') {
+    const idx = analysisForm.selectedAnalysts.indexOf('社媒分析师')
+    if (idx > -1) analysisForm.selectedAnalysts.splice(idx, 1)
+  }
+  // 切换到大宗商品时移除基本面分析师（商品无公司财务数据）
+  if (analysisForm.market === 'COMMODITY') {
+    const idx = analysisForm.selectedAnalysts.indexOf('基本面分析师')
+    if (idx > -1) analysisForm.selectedAnalysts.splice(idx, 1)
+  }
   // 重新验证股票代码
   if (analysisForm.stockCode.trim()) {
     validateStockCodeInput()
@@ -894,6 +916,9 @@ const fetchStockInfo = () => {
 // 切换分析师
 const toggleAnalyst = (analystName: string) => {
   if (analystName === '社媒分析师' && analysisForm.market === 'A股') {
+    return
+  }
+  if (analystName === '基本面分析师' && analysisForm.market === 'COMMODITY') {
     return
   }
 
